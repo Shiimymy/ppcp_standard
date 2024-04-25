@@ -18,6 +18,8 @@ const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
 const endpoint_url = 'https://api-m.sandbox.paypal.com';
 
+/*Generate access Token*/
+
 const generateAccessToken = async () => {
     try {
       if (!client_id || !client_secret) {
@@ -44,7 +46,6 @@ const generateAccessToken = async () => {
 /* Create an order to start the transaction.*/
 
 const createOrder = async (cart) => {
-    // use the cart information passed from the front-end to calculate the purchase unit details
     console.log(
       "shopping cart information passed from the frontend createOrder() callback:",
       cart,
@@ -108,7 +109,6 @@ async function handleResponse(response) {
   
 app.post("/api/orders", async (req, res) => {
     try {
-        // use the cart information passed from the front-end to calculate the order amount detals
         const { cart } = req.body;
         const { jsonResponse, httpStatusCode } = await createOrder(cart);
         res.status(httpStatusCode).json(jsonResponse);
@@ -127,6 +127,34 @@ app.post("/api/orders/:orderID/capture", async (req, res) => {
         console.error("Failed to create order:", error);
         res.status(500).json({ error: "Failed to capture order." });
     }
+});
+
+/* Refund a transaction */
+
+const refundTransaction = async (capture_id) => {
+  const accessToken = await generateAccessToken();
+  const url = `${endpoint_url}/v2/payments/captures/${capture_id}/refund`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  return handleResponse(response);
+};
+
+app.post("/api/captures/:capture_id/refund", async(req, res) =>{
+  try {
+    const {capture_id} = req.params  
+    const { jsonResponse, httpStatusCode } = await refundTransaction(capture_id);
+    res.status(httpStatusCode).json(jsonResponse);
+  } catch (error) {
+    console.error("Failed to refund:", error);
+    res.status(500).json({ error: "Failed to refund order." });
+  }
 });
 
 // serve index.html

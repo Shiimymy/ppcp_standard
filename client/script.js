@@ -7,8 +7,6 @@ window.paypal
           headers: {
             "Content-Type": "application/json",
           },
-          // use the "body" param to optionally pass additional order information
-          // like product ids and quantities
           body: JSON.stringify({
             cart: [
               {
@@ -46,11 +44,7 @@ window.paypal
         });
         
         const orderData = await response.json();
-        // Three cases to handle:
-        //   (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
-        //   (2) Other non-recoverable errors -> Show a failure message
-        //   (3) Successful transaction -> Show confirmation or thank you message
-        
+
         const errorDetail = orderData?.details?.[0];
         
         if (errorDetail?.issue === "INSTRUMENT_DECLINED") {
@@ -94,3 +88,22 @@ function resultMessage(message) {
   const container = document.querySelector("#result-message");
   container.innerHTML = message;
 }
+
+// Refund Button
+document.getElementById('refund_button').addEventListener('click', async () => {
+  try {
+    const response = await fetch(`/api/captures/${captureID}/refund`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const refundData = await response.json()
+    console.log("Refund data:" + refundData)
+    document.getElementById("result-message").innerHTML = "Transaction refunded";
+  }
+  catch(error) {
+    document.getElementById("result-message").innerHTML = "Transaction couldn't be refunded";
+    throw new Error(error);
+  }
+})
